@@ -1,0 +1,33 @@
+{
+  "name": "ctweek4day2",
+  "version": "1.0.0",
+  "description": "Create-ing a memes for the Internet",
+  "main": "index.js",
+  "dependencies": {
+    "dotenv": "^8.0.0",
+    "eslint": "^6.0.1",
+    "express": "^4.17.1",
+    "heroku": "^7.26.2",
+    "jest": "^24.8.0",
+    "nodemon": "^1.19.1",
+    "supertest": "^4.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "jest",
+    "test:watch": "npm run test -- --watch",
+    "start": "node server.js",
+    "start:watch": "nodemon server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noah-puckett/ctweek4day2.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/noah-puckett/ctweek4day2/issues"
+  },
+  "homepage": "https://github.com/noah-puckett/ctweek4day2#readme"
+}
