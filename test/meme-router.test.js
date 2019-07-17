@@ -105,7 +105,6 @@ describe('meme routes', () => {
     // DELETE /api/v1/memes/:id to delete a meme
     it('DELETEs a meme by its id', async() => {
         const meme = await Meme.create({
-
             top: 'waelcoem', 
             image: 'https://i.ytimg.com/vi/8SU0gFPMwP8/maxresdefault.jpg', 
             bottom: 'to mae kitchaen',
