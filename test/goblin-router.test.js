@@ -1,157 +1,110 @@
 require('dotenv').config();
+
 const request = require('supertest');
 const app = require('../lib/app');
-const connect = require('../lib/utils/connect');
-const mongoose = require('mongoose');
-const Goblin = require('../lib/models/Goblin');
+const client = require('../lib/utils/client');
+const child_process = require('child_process');
 
-describe('goblin routes', () => {
-
-    beforeAll(() => {
-        connect();
-    });
-
+describe('app routes', () => {
+  
     beforeEach(() => {
-        return mongoose.connection.dropDatabase();
+        child_process.execSync('npm run recreate-tables');
     });
 
     afterAll(() => {
-        return mongoose.connection.close();
+        client.end();
     });
+
+    const TEST_GOBLIN = {
+        name: 'kevin',
+        color: 'slime green',
+        teeth: 65
+    };
+
+    const createGoblin = (goblin = TEST_GOBLIN) => request(app)
+        .post('/api/v1/goblins')
+        .expect(200)
+        .send(goblin);
+
+    const testGoblin = goblin => {
+        expect(goblin).toEqual({
+            id: expect.any(Number),
+            name: 'kevin',
+            color: 'slime green',
+            teeth: 65
+        });
+    };
+
+    it('creates a goblin', () => {
+        return createGoblin()
+            .then(({ body }) => {
+                testGoblin(body);
+            });
+    });
+
+    it('gets a goblin by id', () => {
+        return createGoblin()
+            .then(({ body }) => {
+                return request(app)
+                    .get(`/api/v1/goblins/${body.id}`)
+                    .expect(200);
+            })
+            .then(({ body }) => {
+                testGoblin(body);
+            });
+    });
+
     
-    
-    // POST /api/v1/goblins to create a goblin
-    it('POST route creates a goblin in the database', () => {
-
-        return request(app)
-            .post('/api/v1/goblins')
-            .send({ name: 'soot sneaksnout', color: 'ashy', teeth: 55 })
-            .then(res => {
-                expect(res.body).toEqual({
-                    _id: expect.any(String),
-                    name: 'soot sneaksnout', 
-                    color: 'ashy', 
-                    teeth: 55, 
-                    __v: 0
-                });
-            });
-    });  
-    
-    
-    // GET /api/v1/goblins to get all goblins
-    it('GET returns all goblins', async() => {
-
-        const goblin = await Goblin.create({
-            name: 'soot sneaksnout', 
-            color: 'ashy', 
-            teeth: 55, 
-            __v: 0
-        });
-
-        return request(app)
-            .get('/api/v1/goblins')
-            .then(res => {
-                const goblinJSON = JSON.parse(JSON.stringify(goblin));
-                expect(res.body).toEqual([goblinJSON]);
+    it('gets a list of goblins', () => {
+        return Promise.all([
+            createGoblin({ name: 'kevin', color: 'hideous', teeth: 33 }),
+            createGoblin({ name: 'keviner', color: 'hideouser', teeth: 32 }),
+            createGoblin({ name: 'kevinest', color: 'hideousest', teeth: 31 })
+        ])
+            .then(() => {
+                return request(app).get('/api/v1/goblins')
+                    .expect(200)
+                    .then(({ body }) => {
+                        expect(body.length).toBe(3);
+                    });
             });
     });
-
-
-    // GET /api/v1/goblins/:id to get a goblin by id
-    it('GET /:id returns a goblin by id', async() => {
-
-        const goblin = await Goblin.create({
-            name: 'soot sneaksnout', 
-            color: 'ashy', 
-            teeth: 55, 
-            __v: 0
-        });
-
-        return request(app)
-            .get(`/api/v1/goblins/${goblin._id}`)
-            .then(res => {
-                const goblinJSON = JSON.parse(JSON.stringify(goblin));
-                expect(res.body).toEqual(goblinJSON);
+        
+    it('updates a goblin', () => {
+        return createGoblin()
+            .then(({ body }) => {
+                body.name = 'Terrible Baby';
+                return request(app)
+                    .put(`/api/v1/goblins/${body.id}`)
+                    .send(body)
+                    .expect(200);
+            })
+            .then(({ body }) => {
+                expect(body.name).toBe('Terrible Baby');
             });
     });
-
-    //PATCH /api/v1/:id
-    it('PATCH goblins/:id updates a single value on a goblin by id', async() => {
-
-        const goblin = await Goblin.create({
-            name: 'starting gobbo, ready to patch',
-            color: 'greenish-pink',
-            teeth: 86,
-            __v: 0
-        });
-
-        const newGob = {
-            name: 'I CREATE LIFE',
-            color: 'greenish-pink',
-            teeth: 86,
-            __v: 0
-        };
-
+            
+    it('returns 404 on non-existant id', () => {
         return request(app)
-            .patch(`/api/v1/goblins/${goblin._id}`)
-            .send(newGob)
-            .then(res => {
-                expect(res.body).toEqual({
-                    _id: expect.any(String),
-                    name: 'I CREATE LIFE',
-                    color: 'greenish-pink',
-                    teeth: 86,
-                    __v: 0
-                });
-            });
+            .get('/api/v1/goblins/100')
+            .expect(404);
     });
-
-    // PUT /api/v1/goblins/:id to update a goblin
-    it('PUT goblins/:id updates a goblin by id', async() => {
-
-        const goblin = await Goblin.create({
-            name: 'gumbler the lipmasher', 
-            color: 'blue-green', 
-            teeth: 2, 
-            __v: 0
-        });
-
-        return request(app)
-            .put(`/api/v1/goblins/${goblin._id}`)
-            .send({ 
-                name: 'soot sneaksnout', 
-                color: 'ashy', 
-                teeth: 55, 
-                __v: 0 })
-            .then(res => {
-                expect(res.body).toEqual({ 
-                    _id: expect.any(String),
-                    name: 'soot sneaksnout', 
-                    color: 'ashy', 
-                    teeth: 55, 
-                    __v: 0 });
-            });
-    });
-
-    // DELETE /api/v1/goblins/:id to delete a goblin
-    it('DELETEs a goblin by its id', async() => {
-
-        const goblin = await Goblin.create({
-            name: 'soot sneaksnout', 
-            color: 'ashy', 
-            teeth: 55, 
-            __v: 0
-        });
-
-        return request(app)
-            .delete(`/api/v1/goblins/${goblin._id}`)
-            .then(res => {
-                expect(res.body).toEqual({ 
-                    _id: expect.any(String),
-                    name: 'soot sneaksnout', 
-                    color: 'ashy', 
-                    teeth: 55, 
-                    __v: 0 });
+            
+    it('MURDERS a goblin', () => {
+        return createGoblin()
+            .then(({ body }) => {
+                return request(app)
+                    .delete(`/api/v1/goblins/${body.id}`)
+                    .expect(200)
+                    .then(({ body: removed }) => {
+                        expect(removed).toEqual(body);
+                        return body.id;
+                    });
+            })
+            .then(id => {
+                return request(app)
+                    .get(`/api/v1/goblins/${id}`)
+                    .expect(404);
             });
     });
 });
