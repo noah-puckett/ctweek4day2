@@ -12,7 +12,7 @@ describe('app routes', () => {
     });
 
     afterAll(() => {
-        client.end();
+        return client.end();
     });
 
     const TEST_GOBLIN = {
